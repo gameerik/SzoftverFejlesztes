@@ -75,7 +75,14 @@ public class ScoreView {
      * Inner class, which will be used to wrap JSON objects.
      */
     private class Player {
+	/**
+	 * The score achieved by the player.
+	 */
         public Long score;
+	
+	/**
+	 * The name of the player
+	 */
         public String name;
 
         public Player(String name, Long score) {
@@ -84,6 +91,9 @@ public class ScoreView {
         }
     };
 
+    /**
+     * Collection of {@link Player}, containt the top scoring players.
+     */
     List<Player> wrapper;
 
 
@@ -229,6 +239,9 @@ public class ScoreView {
 
     /**
      * Updates the JSON file, which stores the previous results.
+     *
+     * @param name The name of the player.
+     * @param score The score achieved by the player.
      */
     public void updateResults(String name, Long score) {
         Gson gson = new Gson();
