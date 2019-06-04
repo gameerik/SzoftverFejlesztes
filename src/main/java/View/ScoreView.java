@@ -81,10 +81,16 @@ public class ScoreView {
         public Long score;
 	
 	/**
-	 * The name of the player
+	 * The name of the player.
 	 */
         public String name;
 
+	/**
+         * Construct the wrapper object.
+         *
+         * @param name The player name.
+         * @param score The player score.
+         */
         public Player(String name, Long score) {
             this.name = name;
             this.score = score;
@@ -200,6 +206,7 @@ public class ScoreView {
 
     /**
      * Updates {@link #currentMin} and {@link #currentMinPlayer}.
+     * @param results The {@link HashMap} containing the player - score {@link Map.Entry}s.
      */
     private void updateMin(Map<String, Long> results) {
             Long min = Long.MIN_VALUE;
