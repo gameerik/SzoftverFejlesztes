@@ -1,12 +1,9 @@
 package Model.GameComponents;
 
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Class representing the cells which build up the board.
@@ -14,43 +11,20 @@ import java.util.List;
 public class Cell {
 
     /**
-     * The {@link Color} of the domino.
-     */
-    private final Color dominoColor = Color.BROWN;
-    /**
      * The {@link State} of the cell.
      * Can be either {@link State #EMPTY} or {@link State #DOMINO}
      */
     private State state;
+
     /**
-     * The {@link Color} of the cell.
-     */
-    private Color color;
-    /**
-     * The horizontal {@link javafx.scene.Scene} position of the cell.
+     * The horizontal position of the cell.
      */
     private double positionX;
 
     /**
-     * The vertical {@link javafx.scene.Scene} position of the cell.
+     * The vertical position of the cell.
      */
     private double positionY;
-
-    /**
-     * The unified width, of each {@link Dot} the {@link Cell} contains.
-     */
-    private double dotWidth;
-
-
-    /**
-     * The unified height, of each {@link Dot} the {@link Cell} contains.
-     */
-    private double dotHeight;
-
-    /**
-     * Collection of {@link Dot}s, which contain their coordinates, inside the {@link Cell}.
-     */
-    private List<Dot> dots;
 
     /**
      * The number of dots, this {@link Cell} contains.
@@ -65,53 +39,45 @@ public class Cell {
     /**
      * Constructs a Cell, having set number of dots, which will be used to construct a {@link Board}.
      *
-     * @param positionX The horizontal position of the {@link Cell} on the {@link javafx.scene.Scene}.
-     * @param positionY The vertical position of the {@link Cell} on the {@link javafx.scene.Scene}.
-     * @param color     The {@link Color} of the Cell.
+     * @param positionX The horizontal position of the {@link Cell} on the.
+     * @param positionY The vertical position of the {@link Cell} on the.
      * @param state     The {@link State} of the Cell.
-     * @param numOfDots The number of {@link Dot}s on the Cell.
-     * @param dotWidth  The unified width of the {@link Dot}.
-     * @param dotHeight The unified height of the {@link Dot}.
+     * @param numOfDots The number of dots on the Cell.
      */
-    public Cell(double positionX, double positionY, Color color, State state, int numOfDots, double dotWidth, double dotHeight) {
+    public Cell(double positionX, double positionY, State state, int numOfDots) {
         logger.info("Creating Cell");
-        this.color = color;
         this.state = state;
         this.positionX = positionX;
         this.positionY = positionY;
         this.numOfDots = numOfDots;
-        this.dotWidth = dotWidth;
-        this.dotHeight = dotHeight;
-        dots = new ArrayList<>();
     }
 
-    private boolean isEmpty() {
+    /**
+     * Checks whether the current {@link State} of the Cell is {@link State #EMPTY}.
+     *
+     * @return true, if it is, false otherwise.
+     */
+    public boolean isEmpty() {
         return state == State.EMPTY;
     }
 
     /**
-     * Renders the {@link #dots} of the Cell, on a {@link javafx.scene.canvas.Canvas}.
+     * Drawing this cell on the console, along with it's current {@link State}.
      *
-     * @param gc The {@link GraphicsContext}, which is used to draw on the {@link javafx.scene.canvas.Canvas}.
+     * @param value The value shown if the cell is {@link State #EMPTY}.
      */
-    public void renderDots(GraphicsContext gc) {
-        logger.info("Rendering dots");
-        for (Dot dot : dots) {
-            gc.setFill(Color.WHITE);
-            gc.fillOval(dot.getPositionX(), dot.getPositionY(), dotWidth, dotHeight);
-        }
+    public void display(String value)  {
+        System.out.printf("[%2s]", this.state == State.EMPTY ? value : "D");
     }
 
     /**
-     * Return the color of the domino, based on it's {@link State}.
+     * Drawing this cell on the console, along with it's current {@link State}.
      *
-     * @return {@link Color #BROWN} if the state of the cell is {@link State #DOMINO}, {@link #color} otherwise.
      */
-    public final Color getColor() {
-        if (state == State.DOMINO)
-            return dominoColor;
-        return color;
+    public void display()  {
+        display(" ");
     }
+
 
     public final double getPositionX() {
         return positionX;
@@ -133,20 +99,8 @@ public class Cell {
         return numOfDots;
     }
 
-    public final double getDotWidth() {
-        return dotWidth;
-    }
-
-    public final double getDotHeight() {
-        return dotHeight;
-    }
-
-    public final List<Dot> getDots() {
-        return dots;
-    }
-
-    public void setDots(List<Dot> dots) {
-        this.dots = dots;
+    public void setNumOfDots(int numOfDots) {
+        this.numOfDots = numOfDots;
     }
 
 

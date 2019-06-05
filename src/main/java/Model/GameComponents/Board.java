@@ -1,14 +1,9 @@
 package Model.GameComponents;
 
-import View.fillDomino;
-import View.fillHorizontalDomino;
-import javafx.scene.paint.Color;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,53 +43,41 @@ public class Board {
      * The height of the board, in pixels.
      */
     private double height;
-    /**
-     * The width of a cell in pixels.
-     */
-    private double cellWidth;
-    /**
-     * The height of a cell in pixels.
-     */
-    private double cellHeight;
+
     /**
      * Collection of {@link Cell} which build up the board.
      */
     private Cell[][] cells;
+
+
+    /**
+     * Collection storing the {@link State EMPTY} cells of the current board, and their coordinates.
+     */
+    private Map<Integer, Map.Entry<Integer, Integer>> currentEmptyCells;
+
     /**
      * The current direction of the 3x1 {@link Cell} (domino).
      */
-    private fillDomino fd;
+    private Direction direction;
     /**
      * The {@link org.slf4j.Logger logger} used in this class.
      */
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
-     * Creates the board, with the given dimensions (in pixels).
-     * Also, initiates {@link #cells} with empty states and the corresponding colors.
-     *
-     * @param width  The width of the board in pixels.
-     * @param height The height of the board in pixels.
+     * Creates a 8x8 Board, filled with {@link State EMPTY} cells, containing [1,6] (inclusive) dots.
      */
-    public Board(double width, double height) {
+    public Board() {
         logger.info("Creating Board");
-        this.width = width;
-        this.height = height;
-        this.cellWidth = width / boardSize;
-        this.cellHeight = height / boardSize;
-        this.fd = new fillHorizontalDomino();
+        this.direction = Direction.HORIZONTAL;
         this.numOfEmptyCells = boardSize * boardSize;
         this.startTime = System.nanoTime();
         cells = new Cell[boardSize][boardSize];
+        State initialState = State.EMPTY;
         for (int i = 0; i < boardSize; i++)
             for (int j = 0; j < boardSize; j++) {
-                Color color = i % 2 == j % 2 ? Color.WHITE : Color.BLACK;
-                cells[i][j] = new Cell(j * cellWidth,
-                        i * cellHeight,
-                        color, State.EMPTY,
-                        (new Random().nextInt(MAX_DOTS) + MIN_DOTS),
-                        cellWidth / MAX_DOTS,
-                        cellHeight / MAX_DOTS);
+                int numOfDots = new Random().nextInt(6) + 1;
+                cells[i][j] = new Cell(j, i, initialState, numOfDots);
             }
     }
 
@@ -116,10 +99,10 @@ public class Board {
         for (int i = 0; i < boardSize; i++)
             for (int j = 0; j < boardSize; j++)
                 if (cells[j][i].getState() == State.EMPTY
-                        && (areHorizontalNeighborsEmpty(i, j) || areVerticalNeighborsEmpty(i, j)))
+                        && (areHorizontalNeighborsEmpty(j, i) || areVerticalNeighborsEmpty(j, i)))
                     return false;
         endTime = System.nanoTime();
-        logger.info("Current game state: Game is over");
+        logger.info("Current game state: Model is over");
         return true;
     }
 
@@ -132,10 +115,11 @@ public class Board {
      * @return true, if both left and right neighbors are empty.
      */
     public final boolean areHorizontalNeighborsEmpty(int boardPositionX, int boardPositionY) {
+        logger.info("checking if cell has horizontal neighbors");
         if (boardPositionX == 0 || boardPositionX == boardSize - 1)
             return false;
-        Cell rightNeighbour = cells[boardPositionY][boardPositionX + 1];
-        Cell leftNeighbour = cells[boardPositionY][boardPositionX - 1];
+        Cell rightNeighbour = cells[boardPositionX + 1][boardPositionY];
+        Cell leftNeighbour = cells[boardPositionX - 1][boardPositionY];
         return rightNeighbour.getState() == State.EMPTY && leftNeighbour.getState() == State.EMPTY;
     }
 
@@ -148,29 +132,12 @@ public class Board {
      * @return true, if both the under and the above neighbors are empty.
      */
     public final boolean areVerticalNeighborsEmpty(int boardPositionX, int boardPositionY) {
+        logger.info("checking if cell has vertical neighbors");
         if (boardPositionY == 0 || boardPositionY == boardSize - 1)
             return false;
-        Cell bottomNeighbour = cells[boardPositionY + 1][boardPositionX];
-        Cell topNeighbour = cells[boardPositionY - 1][boardPositionX];
+        Cell bottomNeighbour = cells[boardPositionX][boardPositionY + 1];
+        Cell topNeighbour = cells[boardPositionX][boardPositionY - 1];
         return bottomNeighbour.getState() == State.EMPTY && topNeighbour.getState() == State.EMPTY;
-    }
-
-    /**
-     * Searches for the {@link Cell} where the cursor is located.
-     *
-     * @param mouseX The horizontal position of the cursor.
-     * @param mouseY The vertical position of the cursor.
-     * @return The cell, if it was found, {@link java.lang.ref.ReferenceQueue Null} otherwise.
-     */
-    public Cell findCurrentCell(double mouseX, double mouseY) {
-        for (int i = 0; i < boardSize; i++)
-            for (int j = 0; j < boardSize; j++) {
-                Cell currentCell = cells[i][j];
-                if ((mouseX > currentCell.getPositionX() && mouseX < currentCell.getPositionX() + cellWidth)
-                        && (mouseY > currentCell.getPositionY() && mouseY < currentCell.getPositionY() + cellHeight))
-                    return currentCell;
-            }
-        return null;
     }
 
     /**
@@ -184,7 +151,7 @@ public class Board {
         logger.info("Placing vertical domino");
         numOfEmptyCells -= 3;
         for (int j = positionY - 1; j <= positionY + 1; j++)
-            cells[j][positionX].setState(State.DOMINO);
+            cells[positionX][j].setState(State.DOMINO);
     }
 
 
@@ -199,102 +166,113 @@ public class Board {
         logger.info("Placing horizontal domino");
         numOfEmptyCells -= 3;
         for (int i = positionX - 1; i <= positionX + 1; i++)
-            cells[positionY][i].setState(State.DOMINO);
+            cells[i][positionY].setState(State.DOMINO);
     }
 
     /**
      * Searches for the given {@link Cell}'s position on the {@link Board}.
      *
      * @param cell The {@link Cell} whom position we seek.
-     * @return The horizontal and vertical {@link Board} position of the {@link Cell} wrapped in a {@link Pair}.
+     * @return The horizontal and vertical {@link Board} position of the {@link Cell} wrapped in a pair.
      */
-    public Pair<Integer, Integer> findCellBoardPosition(Cell cell) {
+    public Map.Entry<Integer, Integer> findCellBoardPosition(Cell cell) {
         logger.info("looking for cell");
         for (int i = 0; i < boardSize; i++)
             for (int j = 0; j < boardSize; j++)
                 if (cell == cells[j][i])
-                    return new Pair<>(j, i);
+                    return new AbstractMap.SimpleEntry<>(j, i);
         return null;
     }
 
     /**
-     * Generates the position of each {@link Dot}, for the given {@link Cell}, based on the {@link Cell #numOfDots}.
-     *
-     * @param cell The {@link Cell} to generate the {@link Dot}/Dots.
+     * Draws the board on the console, highlighting each {@link Cell}'s current state.
      */
-    public void generateDots(Cell cell) {
-        logger.info("Generating dots on the current cell");
-        int numOfDots = cell.getNumOfDots();
-        List<Dot> dots = cell.getDots();
-        double positionX = cell.getPositionX();
-        double positionY = cell.getPositionY();
-        switch (numOfDots) {
-            case 1:
-                dots.add(new Dot(positionX + cellWidth / 2, positionY + cellHeight / 2));
-                break;
-            case 2:
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight / 2));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight / 2));
-                break;
-            case 3:
-                dots.add(new Dot(positionX + cellWidth / 2, positionY + cellHeight / 4));
-                dots.add(new Dot(positionX + cellWidth / 2, positionY + cellHeight * 2 / 4));
-                dots.add(new Dot(positionX + cellWidth / 2, positionY + cellHeight * 3 / 4));
-                break;
-            case 4:
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight / 3));
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight * 2 / 3));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight / 3));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight * 2 / 3));
-                break;
-            case 5:
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight / 3));
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight * 2 / 3));
-                dots.add(new Dot(positionX + cellWidth / 2, positionY + cellHeight / 2));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight / 3));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight * 2 / 3));
-                break;
-            case 6:
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight / 4));
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight * 2 / 4));
-                dots.add(new Dot(positionX + cellWidth / 3, positionY + cellHeight * 3 / 4));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight / 4));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight * 2 / 4));
-                dots.add(new Dot(positionX + cellWidth * 2 / 3, positionY + cellHeight * 3 / 4));
-                break;
+    public void display() {
+        logger.info("displaying the board");
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++)
+                cells[j][i].display();
+            System.out.println();
         }
-        cell.setDots(dots);
+
     }
 
-    public final double getCellWidth() {
-        return cellWidth;
+    /**
+     * Draws the board illustrating the possible choices of 3x1{@link Cell}(Domino) placements.
+     * Also stores the {@link State EMPTY} cells in {@link #currentEmptyCells}.
+     */
+    public void displayPossiblePlacements() {
+        logger.info("displaying the empty cells");
+        this.currentEmptyCells = new HashMap<>();
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                Cell current = cells[j][i];
+                int cellNumber = j * boardSize + i;
+                current.display(Integer.toString(cellNumber));
+                if (current.getState() == State.EMPTY)
+                    currentEmptyCells.put(cellNumber, new AbstractMap.SimpleEntry<>(j, i));
+            }
+            System.out.println();
+        }
     }
 
-    public final double getCellHeight() {
-        return cellHeight;
+    /**
+     * Checks whether a 3x1{@link Cell} can be placed in the current {@link Direction}, if it can be placed, it does
+     * place it.
+     *
+     * @param start The starting cell of the domino.
+     * @param end   The ending cell of the domino.
+     * @return true, if the domino can be placed in the current {@link Direction} between the starting and ending cell.
+     */
+    public boolean isPlaceable(Integer start, Integer end) {
+        logger.info("checking if the domino is placeable");
+        boolean result = false;
+        int x;
+        int y;
+        int sumStart = currentEmptyCells.get(start).getKey() + currentEmptyCells.get(start).getValue();
+        int sumEnd = currentEmptyCells.get(end).getKey() + currentEmptyCells.get(end).getValue();
+        if (!(Math.abs(sumStart - sumEnd) == 2))
+            return false;
+        if (direction == Direction.HORIZONTAL) {
+            x = Math.min(currentEmptyCells.get(start).getKey(), currentEmptyCells.get(end).getKey()) + 1;
+            y = currentEmptyCells.get(end).getValue();
+            logger.info("x: "  + x + " " + "y: " + y);
+            result =  y == currentEmptyCells.get(start).getValue() && areHorizontalNeighborsEmpty(x, y);
+            if (result) {
+                setHorizontalDomino(x, y);
+                return result;
+            }
+        } else {
+            x = currentEmptyCells.get(end).getKey();
+            y = Math.min(currentEmptyCells.get(start).getValue(), currentEmptyCells.get(end).getValue()) + 1;
+            logger.info("x: "  + x + " " + "y: " + y);
+            result = x == currentEmptyCells.get(start).getKey() && areVerticalNeighborsEmpty(x, y);
+            if (result)
+                setVerticalDomino(x, y);
+        }
+        return result;
     }
-
 
     public final Cell[][] getCells() {
         return cells;
     }
 
     /**
-     * Return {@link #fd}.
+     * Returns the current {@link Direction}.
      *
-     * @return {@link #fd}.
+     * @return {@link #direction}.
      */
-    public final fillDomino getfillDomino() {
-        return fd;
+    public final Direction getDirection() {
+        return direction;
     }
 
     /**
-     * Sets {@link #fd} to the given parameter.
+     * Sets {@link #direction} to the given {@link Direction}.
      *
-     * @param fd the implementation of a {@link fillDomino}, representing the direction of the 3x1{@link Cell}(Domino).
+     * @param direction representing the direction of the 3x1{@link Cell}(Domino).
      */
-    public void setfillDomino(fillDomino fd) {
-        this.fd = fd;
+    public void setDirection(Direction direction) {
+        this.direction = direction;
     }
 
     public final long getScore() {
@@ -303,6 +281,14 @@ public class Board {
 
     public final void setNumOfEmptyCells(int numOfEmptyCells) {
         this.numOfEmptyCells = numOfEmptyCells;
+    }
+
+    public final int getBoardSize() {
+        return boardSize;
+    }
+
+    public final Map<Integer, Map.Entry<Integer, Integer>> getCurrentEmptyCells() {
+        return currentEmptyCells;
     }
 
 }
